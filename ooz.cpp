@@ -34,17 +34,18 @@ void error(const char *s, const char *curfile = NULL) {
 }
 
 
-byte *load_file(const char *filename, int *size) {
+byte *load_file(const char *filename, size_t *size) {
   FILE *f = fopen(filename, "rb");
   if (!f) error("file open error", filename);
   fseek(f, 0, SEEK_END);
-  int packed_size = ftell(f);
+  ssize_t packed_size = ftell(f);
+  if (packed_size<0) error("file tell error", filename);
   fseek(f, 0, SEEK_SET);
   byte *input = new byte[packed_size];
   if (!input) error("memory error", filename);
   if (fread(input, 1, packed_size, f) != packed_size) error("error reading", filename);
   fclose(f);
-  *size = packed_size;
+  *size = (size_t)packed_size;
   return input;
 }
 
@@ -140,15 +141,15 @@ int ParseCmdLine(int argc, char *argv[]) {
   return i;
 }
 
-bool Verify(const char *filename, uint8 *output, int outbytes, const char *curfile) {
-  int test_size;
+bool Verify(const char *filename, uint8 *output, size_t outbytes, const char *curfile) {
+  size_t test_size;
   byte *test = load_file(filename, &test_size);
   if (!test) {
     fprintf(stderr, "file open error: %s\n", filename);
     return false;
   }
   if (test_size != outbytes) {
-    fprintf(stderr, "%s: ERROR: File size difference: %d vs %d\n", filename, outbytes, test_size);
+    fprintf(stderr, "%s: ERROR: File size difference: %zu vs %zu\n", filename, outbytes, test_size);
     return false;
   }
   for (int i = 0; i != test_size; i++) {
@@ -174,10 +175,10 @@ HINSTANCE LoadLibraryA(const char *s) { return 0; }
 void *GetProcAddress(HINSTANCE h, const char *s) { return 0; }
 #endif
 
-typedef int WINAPI OodLZ_CompressFunc(
+typedef ssize_t WINAPI OodLZ_CompressFunc(
   int codec, uint8 *src_buf, size_t src_len, uint8 *dst_buf, int level,
   void *opts, size_t offs, size_t unused, void *scratch, size_t scratch_size);
-typedef int WINAPI OodLZ_DecompressFunc(uint8 *src_buf, int src_len, uint8 *dst, size_t dst_size,
+typedef ssize_t WINAPI OodLZ_DecompressFunc(uint8 *src_buf, int src_len, uint8 *dst, size_t dst_size,
                                           int fuzz, int crc, int verbose,
                                           uint8 *dst_base, size_t e, void *cb, void *cb_ctx, void *scratch, size_t scratch_size, int threadPhase);
 
@@ -248,11 +249,11 @@ int main(int argc, char *argv[]) {
   for (; argi < argc; argi++) {
     const char *curfile = argv[argi];
 
-    int input_size;
+    size_t input_size;
     byte *input = load_file(curfile, &input_size);
 
     byte *output = NULL;
-    int outbytes = 0;
+    ssize_t outbytes = 0;
 
     if (arg_direction == 'z') {
       // compress using the dll
@@ -268,7 +269,7 @@ int main(int argc, char *argv[]) {
       QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
       double seconds = (double)(end - start) / freq;
       if (!arg_quiet)
-        fprintf(stderr, "%-20s: %8d => %8ld (%.2f seconds, %.2f MB/s)\n", argv[argi], input_size, outbytes, seconds, input_size * 1e-6 / seconds);
+        fprintf(stderr, "%-20s: %8zu => %8zu (%.2f seconds, %.2f MB/s)\n", argv[argi], input_size, (size_t)outbytes, seconds, input_size * 1e-6 / seconds);
     } else {
       if (arg_dll)
         LoadLib();
@@ -277,7 +278,7 @@ int main(int argc, char *argv[]) {
       // the previous version of this tool wrote a 4-byte header.
       int hdrsize = *(uint64*)input >= 0x10000000000 ? 4 : 8;
       
-      uint64 unpacked_size = (hdrsize == 8) ? *(uint64*)input : *(uint32*)input;
+      size_t unpacked_size = (hdrsize == 8) ? *(size_t*)input : *(uint32*)input;
       if (unpacked_size > (hdrsize == 4 ? 52*1024*1024 : 1024 * 1024 * 1024)) 
         error("file too large", curfile);
       output = new byte[unpacked_size + SAFE_SPACE];
@@ -296,7 +297,7 @@ int main(int argc, char *argv[]) {
       QueryPerformanceFrequency((LARGE_INTEGER*)&freq);
       double seconds = (double)(end - start) / freq;
       if (!arg_quiet)
-        fprintf(stderr, "%-20s: %8d => %8lld (%.2f seconds, %.2f MB/s)\n", argv[argi], input_size, unpacked_size, seconds, unpacked_size * 1e-6 / seconds);
+        fprintf(stderr, "%-20s: %8zu => %8zu (%.2f seconds, %.2f MB/s)\n", argv[argi], input_size, unpacked_size, seconds, unpacked_size * 1e-6 / seconds);
     }
 
     if (verifyfolder) {
@@ -307,7 +308,7 @@ int main(int argc, char *argv[]) {
         if (*s == '/' || *s == '\\')
           basename = s + 1;
       const char *ext = strrchr(basename, '.');
-      snprintf(buf, sizeof(buf), "%s/%.*s", verifyfolder, ext ? (ext - basename) : strlen(basename), basename);
+      snprintf(buf, sizeof(buf), "%s/%.*s", verifyfolder, (int)(ext ? (ext - basename) : strlen(basename)), basename);
       if (!Verify(buf, output, outbytes, curfile))
         return 1;
       nverify++;

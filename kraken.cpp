@@ -4129,9 +4129,9 @@ bool Kraken_DecodeStep(struct KrakenDecoder *dec,
   return true;
 }
   
-int Kraken_Decompress(const byte *src, size_t src_len, byte *dst, size_t dst_len) {
+ssize_t Kraken_Decompress(const byte *src, size_t src_len, byte *dst, size_t dst_len) {
   KrakenDecoder *dec = Kraken_Create();
-  int offset = 0;
+  ssize_t offset = 0;
   while (dst_len != 0) {
     if (!Kraken_DecodeStep(dec, dst, offset, dst_len, src, src_len))
       goto FAIL;

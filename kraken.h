@@ -24,7 +24,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 extern "C" {
 #endif
 
-extern int Kraken_Decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_len);
+extern ssize_t Kraken_Decompress(const uint8_t *src, size_t src_len, uint8_t *dst, size_t dst_len);
 
 #ifdef __cplusplus
 }
