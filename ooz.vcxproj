@@ -157,7 +157,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="moo.h" />
+    <ClInclude Include="kraken.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
@@ -165,6 +165,7 @@
     <ClCompile Include="bitknit.cpp" />
     <ClCompile Include="kraken.cpp" />
     <ClCompile Include="lzna.cpp" />
+    <ClCompile Include="ooz.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
