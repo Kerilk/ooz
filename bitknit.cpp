@@ -1,3 +1,21 @@
+/*
+Copyright (C) 2016, Powzix
+Copyright (C) 2019, rarten
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "stdafx.h"
 
 struct BitknitLiteral {
@@ -319,7 +337,7 @@ size_t Bitknit_Decode(const byte *src, const byte *src_end, byte *dst, byte *dst
 
   v = *(uint32*)src, src += 4;
   if (v < 0x10000)
-    return NULL;
+    return 0;
 
   a = v >> 4;
   n = v & 0xF;
@@ -343,7 +361,8 @@ size_t Bitknit_Decode(const byte *src, const byte *src_end, byte *dst, byte *dst
     RENORMALIZE();
 
     if (sym < 256) {
-      *dst++ = sym + dst[last_match_negative];
+      *dst = sym + dst[last_match_negative];
+      dst++;
 
       if (dst + 4 >= dst_end)
         break;
@@ -352,7 +371,8 @@ size_t Bitknit_Decode(const byte *src, const byte *src_end, byte *dst, byte *dst
       RENORMALIZE();
 
       if (sym < 256) {
-        *dst++ = sym + dst[last_match_negative];
+        *dst = sym + dst[last_match_negative];
+        dst++;
         continue;
       }
     }
@@ -387,7 +407,7 @@ size_t Bitknit_Decode(const byte *src, const byte *src_end, byte *dst, byte *dst
       size_t idx = (recent_dist_mask >> (3 * sym)) & 7;
       uint32 mask = ~7 << (3 * sym);
       match_dist = bk->recent_dist[idx];
-      recent_dist_mask = (recent_dist_mask & mask) | (idx + 8 * recent_dist_mask) & ~mask;
+      recent_dist_mask = (recent_dist_mask & mask) | ((idx + 8 * recent_dist_mask) & ~mask);
     }
     
     if (match_dist >= 8) {

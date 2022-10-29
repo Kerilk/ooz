@@ -1,6 +1,7 @@
 /*
 === Kraken Decompressor for Windows ===
 Copyright (C) 2016, Powzix
+Copyright (C) 2019, rarten
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -17,6 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 #include "stdafx.h"
+#include <sys/stat.h>
 
 // Header in front of each 256k block
 typedef struct KrakenHeader {
@@ -4185,13 +4187,14 @@ enum {
 bool arg_stdout, arg_force, arg_quiet, arg_dll;
 int arg_compressor = kCompressor_Kraken, arg_level = 4;
 char arg_direction;
-char *verifyfolder;
+const char *verifyfolder;
 
 int ParseCmdLine(int argc, char *argv[]) {
   int i;
   // parse command line
   for (i = 1; i < argc; i++) {
-    char *s = argv[i], c;
+    const char *s = argv[i];
+    char c;
     if (*s != '-')
       break;
     if (*++s == '-') {
@@ -4285,6 +4288,20 @@ bool Verify(const char *filename, uint8 *output, int outbytes, const char *curfi
   return true;
 }
 
+#ifndef _MSC_VER
+typedef uint64_t LARGE_INTEGER;
+void QueryPerformanceCounter(LARGE_INTEGER *a) {
+  *a = 0;
+}
+void QueryPerformanceFrequency(LARGE_INTEGER *a) {
+  *a = 1;
+}
+#define WINAPI
+typedef void* HINSTANCE;
+HINSTANCE LoadLibraryA(const char *s) { return 0; }
+void *GetProcAddress(HINSTANCE h, const char *s) { return 0; }
+#endif
+
 typedef int WINAPI OodLZ_CompressFunc(
   int codec, uint8 *src_buf, size_t src_len, uint8 *dst_buf, int level,
   void *opts, size_t offs, size_t unused, void *scratch, size_t scratch_size);
@@ -4318,14 +4335,14 @@ void LoadLib() {
 }
 
 int main(int argc, char *argv[]) {
-  __int64 start, end, freq;
+  int64_t start, end, freq;
   int argi;
 
   if (argc < 2 || 
       (argi = ParseCmdLine(argc, argv)) < 0 || 
       argi >= argc ||  // no files
-      arg_direction != 'b' && (argc - argi) > 2 ||  // too many files
-      arg_direction == 't' && (argc - argi) != 2     // missing argument for verify
+      (arg_direction != 'b' && (argc - argi) > 2) ||  // too many files
+      (arg_direction == 't' && (argc - argi) != 2)     // missing argument for verify
       ) {
     fprintf(stderr, "ooz v7.0\n\n"
       "Usage: ooz [options] input [output]\n"

@@ -1,3 +1,21 @@
+/*
+Copyright (C) 2016, Powzix
+Copyright (C) 2019, rarten
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 #include "stdafx.h"
 
 
@@ -139,7 +157,7 @@ static void LznaFarDistModel_Init(LznaFarDistModel *d) {
 }
 
 void LZNA_InitLookup(LznaState *lut) {
-  int i;
+  int i, j;
 
   for (i = 0; i < 4; i++)
     lut->match_history[i + 4] = 1;
@@ -155,8 +173,9 @@ void LZNA_InitLookup(LznaState *lut) {
   LznaNibbleModel_Init(&lut->long_length_recent.second);
   LznaNibbleModel_InitN(&lut->long_length_recent.third, 1);
 
-  for (i = 0; i < 48; i++)
-    lut->short_length[0][i] = 0x2000;
+  for (i = 0; i < 12; i++)
+    for(j = 0; j < 4; j++)
+      lut->short_length[i][j] = 0x2000;
 
   LznaNearDistModel_Init(lut->near_dist, 2);
   LznaLowBitsDistanceModel_Init(lut->low_bits_of_distance, 2);
